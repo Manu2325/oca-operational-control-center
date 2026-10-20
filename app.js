@@ -422,7 +422,7 @@ async function loadPKAgentView(pkSheetName) {
     await loadStyledSheetView(pkSheetName, 'A1:Z300', 'pk-table-area');
 }
 
-// Envío del registro mediante POST
+// Envío seguro de nuevo registro
 async function submitPKRecord(pkSheetName) {
     const customerName = document.getElementById('pk-customer').value.trim();
     const account = document.getElementById('pk-account').value.trim();
@@ -455,18 +455,25 @@ async function submitPKRecord(pkSheetName) {
     msg.textContent = "Guardando registro...";
 
     try {
+        const formData = new URLSearchParams();
+        formData.append('payload', JSON.stringify({
+            action: 'addPKRecord',
+            sheetName: pkSheetName,
+            customerName, account, company, balance, followUpDate, paymentMethod, description, didPay
+        }));
+
         await fetch(CONFIG.WEBHOOK_URL, {
             method: 'POST',
-            body: JSON.stringify({
-                action: 'addPKRecord',
-                sheetName: pkSheetName,
-                customerName, account, company, balance, followUpDate, paymentMethod, description, didPay
-            })
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formData.toString()
         });
 
         msg.className = "text-emerald-400 font-semibold";
         msg.textContent = "¡Registro guardado correctamente!";
-        setTimeout(() => loadPKAgentView(pkSheetName), 1200);
+        setTimeout(() => loadPKAgentView(pkSheetName), 1500);
     } catch (e) {
         msg.className = "text-rose-400 font-semibold";
         msg.textContent = "Error al guardar el registro.";
@@ -542,16 +549,24 @@ async function executeDeleteRow() {
     }
 }
 
+// Actualización de Did Cx Pay? sin CORS
 async function updateDidPayStatus(sheetName, rowIndex, newValue) {
     try {
+        const formData = new URLSearchParams();
+        formData.append('payload', JSON.stringify({
+            action: 'updateDidPay',
+            sheetName: sheetName,
+            rowIndex: rowIndex,
+            value: newValue
+        }));
+
         await fetch(CONFIG.WEBHOOK_URL, {
             method: 'POST',
-            body: JSON.stringify({
-                action: 'updateDidPay',
-                sheetName: sheetName,
-                rowIndex: rowIndex,
-                value: newValue
-            })
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formData.toString()
         });
     } catch (e) {
         console.error("Error al actualizar estado de pago:", e);
